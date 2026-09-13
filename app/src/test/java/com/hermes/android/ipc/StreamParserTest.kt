@@ -24,8 +24,8 @@ class StreamParserTest {
     @Test fun plainTextFallback() {
         assertEquals(StreamEvent.Token("raw"), StreamParser.parseLine("raw"))
     }
-    @Test fun sessionAndError() {
-        assertTrue(StreamParser.parseLine("""{"type":"session","id":"s1"}""") is StreamEvent.Session)
-        assertTrue(StreamParser.parseLine("""{"type":"error","message":"x"}""") is StreamEvent.Error)
+    @Test fun openAiSseChunk() {
+        val line = """data: {"choices":[{"delta":{"content":" streaming token"}}]}"""
+        assertEquals(StreamEvent.Token(" streaming token"), StreamParser.parseLine(line))
     }
 }

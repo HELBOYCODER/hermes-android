@@ -10,6 +10,7 @@ import com.hermes.android.ui.cron.CronScreen
 import com.hermes.android.ui.dashboard.DashboardScreen
 import com.hermes.android.ui.gateway.GatewaySetupScreen
 import com.hermes.android.ui.memory.MemoryScreen
+import com.hermes.android.ui.models.ProvidersScreen
 import com.hermes.android.ui.more.MoreScreen
 import com.hermes.android.ui.settings.SettingsScreen
 import com.hermes.android.ui.setup.SetupWizardScreen
@@ -21,11 +22,12 @@ import com.hermes.android.ui.tools.ToolsManagerScreen
 /** Single-file navigation host without a nav-compose dependency. */
 @Composable
 fun HermesNavHost() {
-    var dest by remember { mutableStateOf(Dest.SETUP) }
+    var dest by remember { mutableStateOf(Dest.CHAT) }
     val go: (Dest) -> Unit = { dest = it }
     when (dest) {
         Dest.SETUP -> SetupWizardScreen(onDone = { dest = Dest.CHAT })
         Dest.CHAT -> HermesScaffold(dest, go) { ChatScreen() }
+        Dest.MODELS -> HermesScaffold(dest, go) { ProvidersScreen() }
         Dest.TERMINAL -> HermesScaffold(dest, go) { TerminalScreen() }
         Dest.TOOLS -> HermesScaffold(dest, go) { ToolsManagerScreen() }
         Dest.CRON -> HermesScaffold(dest, go) { CronScreen() }
@@ -39,4 +41,4 @@ fun HermesNavHost() {
     }
 }
 
-enum class Dest { SETUP, CHAT, TERMINAL, TOOLS, CRON, GATEWAY, MEMORY, SKILLS, DASH, SETTINGS, SOUL, MORE }
+enum class Dest { SETUP, CHAT, MODELS, TERMINAL, TOOLS, CRON, GATEWAY, MEMORY, SKILLS, DASH, SETTINGS, SOUL, MORE }

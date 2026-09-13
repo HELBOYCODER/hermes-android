@@ -9,44 +9,74 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
-/** Hermes brand: dark-first, gold accent. 4dp spacing grid, coherent radii. */
+/**
+ * Open Minis-inspired Theme with Hermes identity:
+ * Deep Obsidian Void background, Emerald & Electric Cyan accents with Amber highlights.
+ */
 object HermesTokens {
-    val Gold = Color(0xFFD4A017)
-    val GoldSoft = Color(0xFF8A6D1B)
-    val BgDark = Color(0xFF0B0D12)
-    val SurfaceDark = Color(0xFF14171F)
-    val CardDark = Color(0xFF1A1E29)
-    val TextDark = Color(0xFFE8EAF0)
-    val MutedDark = Color(0xFF9AA0B4)
-    val Success = Color(0xFF34C77B)
-    val Warning = Color(0xFFF0A020)
-    val Error = Color(0xFFE5484D)
-    val Info = Color(0xFF4C9AFF)
+    val Emerald = Color(0xFF10B981)
+    val EmeraldDark = Color(0xFF047857)
+    val Cyan = Color(0xFF06B6D4)
+    val Amber = Color(0xFFF59E0B)
+    val Gold = Color(0xFFEAB308)
+
+    // Obsidian background surfaces
+    val BgDark = Color(0xFF080C14)
+    val SurfaceDark = Color(0xFF0F172A)
+    val CardDark = Color(0xFF162033)
+    val CardElevated = Color(0xFF1E293B)
+    val BorderSubtle = Color(0xFF243247)
+
+    // Bubbles
+    val UserBubble = Color(0xFF1E3A5F)
+    val AssistantBubble = Color(0xFF131C2E)
+    val CodeBlockBg = Color(0xFF060911)
+
+    // Text & status
+    val TextPrimary = Color(0xFFF1F5F9)
+    val TextMuted = Color(0xFF94A3B8)
+    val Success = Color(0xFF10B981)
+    val Warning = Color(0xFFF59E0B)
+    val Error = Color(0xFFEF4444)
+    val Info = Color(0xFF38BDF8)
+
+    // Layout
     val RadiusS = 8.dp
-    val RadiusM = 12.dp
-    val RadiusL = 16.dp
+    val RadiusM = 14.dp
+    val RadiusL = 20.dp
+    val RadiusPill = 999.dp
     val TitleSize = 20.sp
     val BodySize = 14.sp
     val MonoSize = 12.sp
 }
 
 private val DarkScheme = darkColorScheme(
-    primary = HermesTokens.Gold,
+    primary = HermesTokens.Emerald,
     onPrimary = Color.Black,
+    primaryContainer = HermesTokens.UserBubble,
+    onPrimaryContainer = HermesTokens.TextPrimary,
+    secondary = HermesTokens.Cyan,
+    onSecondary = Color.Black,
+    tertiary = HermesTokens.Amber,
     background = HermesTokens.BgDark,
-    onBackground = HermesTokens.TextDark,
+    onBackground = HermesTokens.TextPrimary,
     surface = HermesTokens.SurfaceDark,
-    onSurface = HermesTokens.TextDark,
+    onSurface = HermesTokens.TextPrimary,
     surfaceVariant = HermesTokens.CardDark,
-    error = HermesTokens.Error,
-    tertiary = HermesTokens.Info
+    onSurfaceVariant = HermesTokens.TextMuted,
+    outline = HermesTokens.BorderSubtle,
+    error = HermesTokens.Error
 )
 
 private val LightScheme = lightColorScheme(
-    primary = Color(0xFF9A7210),
+    primary = HermesTokens.EmeraldDark,
     onPrimary = Color.White,
-    background = Color(0xFFF6F4EC),
-    surface = Color.White
+    primaryContainer = Color(0xFFE0F2FE),
+    onPrimaryContainer = Color(0xFF0369A1),
+    background = Color(0xFFF8FAFC),
+    surface = Color.White,
+    surfaceVariant = Color(0xFFF1F5F9),
+    outline = Color(0xFFCBD5E1)
 )
 
 @Composable
@@ -56,7 +86,7 @@ fun HermesTheme(
     content: @Composable () -> Unit
 ) {
     val scheme = when {
-        dark && amoled -> DarkScheme.copy(background = Color.Black, surface = Color.Black)
+        dark && amoled -> DarkScheme.copy(background = Color.Black, surface = Color(0xFF080C14))
         dark -> DarkScheme
         else -> LightScheme
     }

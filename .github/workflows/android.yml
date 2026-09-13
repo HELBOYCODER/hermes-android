@@ -23,12 +23,14 @@ jobs:
         if: github.ref == 'refs/heads/main'
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v1.0.0
-          name: "Hermes Android v1.0.0"
+          tag_name: v1.1.0
+          name: "Hermes Android v1.1.0"
           files: app/build/outputs/apk/debug/app-debug.apk
           body: |
-            ## Hermes Android v1.0.0 (Preview)
-            - Native Jetpack Compose UI
-            - Hermes Agent Onboarding & Termux Integration
-            - Terminal, Tools, Cron, Gateway, Memory, Skills, Dashboard
-            - No ads, no paywalls, completely unlocked.
+            ## Hermes Android v1.1.0
+            - **Free Model & Provider Integration**: Connect freely to OpenAI, Anthropic, Google Gemini, OpenRouter, Ollama, Termux 9Router, and arbitrary custom endpoints.
+            - **No Model Limits**: Add and switch to ANY custom model identifier on the fly.
+            - **Termux Auto-Detection**: Live probing of Termux loopback services (8765, 9119, 20128, 11434) and seamless linking.
+            - **Open Minis-Inspired Aesthetic**: Modern obsidian slate dark surfaces with vibrant emerald green & electric cyan accents.
+            - **Quick Model Selector Pill**: Switch active models across all providers instantly from the chat top bar.
+            - **Multi-Format SSE Streaming**: Unified stream parser supporting Hermes Gateway and standard OpenAI streaming events.
