@@ -4,24 +4,26 @@ import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
+import android.app.Service
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.os.Build
+import android.os.IBinder
 import android.os.PowerManager
 import androidx.core.app.NotificationCompat
-import androidx.lifecycle.LifecycleService
 import com.hermes.android.MainActivity
-import com.hermes.android.R
 
 /**
  * Foreground service (dataSync): keeps Hermes gateway + cron alive.
  * Android suspends background jobs -> WakeLock + battery-opt exemption
  * prompt (see SetupWizard) + BootReceiver resume.
  */
-class HermesForegroundService : LifecycleService() {
+class HermesForegroundService : Service() {
 
     private var wake: PowerManager.WakeLock? = null
+
+    override fun onBind(intent: Intent?): IBinder? = null
 
     override fun onCreate() {
         super.onCreate()
@@ -33,9 +35,7 @@ class HermesForegroundService : LifecycleService() {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        super.onStartCommand(intent, flags, startId)
         startForeground(NOTIF_ID, buildNotif(intent?.getStringExtra(EXTRA_STATUS) ?: "Gateway running"))
-        // ponytail: gateway + cron boot here (proot exec); v1 starts on Setup completion.
         return START_STICKY
     }
 
@@ -79,7 +79,6 @@ class HermesForegroundService : LifecycleService() {
 class BootReceiver : BroadcastReceiver() {
     override fun onReceive(ctx: Context, intent: Intent) {
         if (intent.action == Intent.ACTION_BOOT_COMPLETED) {
-            // ponytail: resume gateway + cron only if user completed setup.
             val done = ctx.getSharedPreferences("hermes", Context.MODE_PRIVATE)
                 .getBoolean("setup_done", false)
             if (done) HermesForegroundService.start(ctx, "Resuming gateway…")

@@ -58,8 +58,13 @@ fun TerminalScreen() {
             }
         }
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            OutlinedTextField(value = cmd, onValueChange = { cmd = it }, modifier = Modifier.weight(1f),
-                placeholder = { Text("bash…") }, fontFamily = FontFamily.Monospace)
+            OutlinedTextField(
+                value = cmd,
+                onValueChange = { cmd = it },
+                modifier = Modifier.weight(1f),
+                placeholder = { Text("bash…") },
+                textStyle = androidx.compose.ui.text.TextStyle(fontFamily = FontFamily.Monospace)
+            )
             Button(onClick = {
                 lines += "\$ $cmd"
                 lines += "(exec via proot userland — full PTY lands with terminal-emulator dep)"
