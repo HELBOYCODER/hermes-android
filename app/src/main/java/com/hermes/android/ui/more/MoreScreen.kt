@@ -13,7 +13,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.hermes.android.Dest
 
-/** Hub for secondary destinations (tools, cron, gateway, skills, models, soul). */
+/** Hub for secondary cloud-backed Hermes capabilities. */
 @Composable
 fun MoreScreen(onGo: (Dest) -> Unit) {
     val rows = listOf(
@@ -21,14 +21,13 @@ fun MoreScreen(onGo: (Dest) -> Unit) {
         Dest.CRON to "⏰ Cron jobs",
         Dest.GATEWAY to "📡 Messaging gateway",
         Dest.SKILLS to "🧠 Skills",
-        Dest.MODELS to "📦 Local models",
         Dest.SOUL to "✨ Soul & context",
     )
     Column(Modifier.fillMaxSize().padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Text("All features", style = MaterialTheme.typography.headlineSmall)
-        Text("No ads · no paywall · everything unlocked.", style = MaterialTheme.typography.bodySmall)
-        rows.forEach { (d, label) ->
-            Button(onClick = { onGo(d) }, Modifier.fillMaxWidth()) { Text(label) }
+        Text("Cloud-provider mode · no ads · no paywall.", style = MaterialTheme.typography.bodySmall)
+        rows.forEach { (destination, label) ->
+            Button(onClick = { onGo(destination) }, Modifier.fillMaxWidth()) { Text(label) }
         }
     }
 }
