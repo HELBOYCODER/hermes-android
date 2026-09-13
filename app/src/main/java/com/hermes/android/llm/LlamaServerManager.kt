@@ -10,21 +10,9 @@ import java.io.FileOutputStream
 import java.net.HttpURLConnection
 import java.net.URL
 
-/**
- * Owns the embedded llama.cpp server and its GGUF model library. The native
- * `llama-server` executable is packaged by the Android NDK build at
- * files/bin/llama-server and is only exposed after the process starts.
- */
+/** Owns the embedded llama.cpp server and its GGUF model library. */
 class LlamaServerManager(private val ctx: Context) {
-
-    data class Model(
-        val id: String,
-        val hfRepo: String,
-        val file: String,
-        val sizeGb: Double,
-        val minRamGb: Double,
-        val downloaded: Boolean = false,
-    )
+    data class Model(val id: String, val hfRepo: String, val file: String, val sizeGb: Double, val minRamGb: Double, val downloaded: Boolean = false)
 
     val library = listOf(
         Model("qwen2.5-0.5b", "Qwen/Qwen2.5-0.5B-Instruct-GGUF", "qwen2.5-0.5b-instruct-q4_k_m.gguf", 0.4, 2.0),
@@ -34,7 +22,6 @@ class LlamaServerManager(private val ctx: Context) {
     )
 
     data class Status(val running: Boolean, val modelId: String?, val tokPerSec: Double?, val endpoint: String)
-
     private val _status = MutableStateFlow(Status(false, null, null, ENDPOINT))
     val status: StateFlow<Status> = _status
     private var process: Process? = null
@@ -50,16 +37,12 @@ class LlamaServerManager(private val ctx: Context) {
 
     fun recommended(): List<Model> = library.filter { it.minRamGb <= deviceRamGb() }
 
-    /**
-     * Downloads into a .part file and resumes only when the server honors Range.
-     * A server that ignores Range restarts safely instead of corrupting the GGUF.
-     */
+    /** Downloads to a .part file and resumes only if the server honors Range. */
     suspend fun download(model: Model, onProgress: (Float) -> Unit) = withContext(Dispatchers.IO) {
         val destination = File(modelsDir, model.file)
         val partial = File(modelsDir, "${model.file}.part")
         val existing = partial.takeIf { it.exists() }?.length() ?: 0L
-        val connection = (URL("https://huggingface.co/${model.hfRepo}/resolve/main/${model.file}")
-            .openConnection() as HttpURLConnection).apply {
+        val connection = (URL("https://huggingface.co/${model.hfRepo}/resolve/main/${model.file}").openConnection() as HttpURLConnection).apply {
             connectTimeout = 15_000
             readTimeout = 30_000
             instanceFollowRedirects = true
@@ -99,12 +82,7 @@ class LlamaServerManager(private val ctx: Context) {
         require(modelFile.isFile && modelFile.length() > 0) { "Download ${model.id} before starting it" }
         require(serverBinary.isFile) { "Local server binary is unavailable in this build" }
         serverBinary.setExecutable(true, true)
-        process = ProcessBuilder(
-            serverBinary.absolutePath,
-            "--host", "127.0.0.1",
-            "--port", "8080",
-            "--model", modelFile.absolutePath,
-        ).redirectErrorStream(true).start()
+        process = ProcessBuilder(serverBinary.absolutePath, "--host", "127.0.0.1", "--port", "8080", "--model", modelFile.absolutePath).redirectErrorStream(true).start()
         if (process?.isAlive != true) error("llama.cpp server exited during startup")
         _status.value = Status(true, model.id, null, ENDPOINT)
         registerAsHermesProvider()
@@ -123,9 +101,7 @@ class LlamaServerManager(private val ctx: Context) {
         val env = File(ctx.filesDir, ".hermes/.env")
         env.parentFile?.mkdirs()
         val key = "HERMES_CUSTOM_PROVIDER_LOCAL"
-        val retained = env.takeIf { it.exists() }?.readLines()
-            ?.filterNot { it.startsWith("$key=") }
-            .orEmpty()
+        val retained = env.takeIf { it.exists() }?.readLines()?.filterNot { it.startsWith("$key=") }.orEmpty()
         env.writeText((retained + "$key=$ENDPOINT").joinToString("\n", postfix = "\n"))
     }
 
