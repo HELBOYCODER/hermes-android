@@ -23,14 +23,14 @@ jobs:
         if: github.ref == 'refs/heads/main'
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v1.1.0
-          name: "Hermes Android v1.1.0"
+          tag_name: v1.2.0
+          name: "Hermes Android v1.2.0 — Minis Provider Suite"
           files: app/build/outputs/apk/debug/app-debug.apk
           body: |
-            ## Hermes Android v1.1.0
-            - **Free Model & Provider Integration**: Connect freely to OpenAI, Anthropic, Google Gemini, OpenRouter, Ollama, Termux 9Router, and arbitrary custom endpoints.
-            - **No Model Limits**: Add and switch to ANY custom model identifier on the fly.
-            - **Termux Auto-Detection**: Live probing of Termux loopback services (8765, 9119, 20128, 11434) and seamless linking.
-            - **Open Minis-Inspired Aesthetic**: Modern obsidian slate dark surfaces with vibrant emerald green & electric cyan accents.
-            - **Quick Model Selector Pill**: Switch active models across all providers instantly from the chat top bar.
-            - **Multi-Format SSE Streaming**: Unified stream parser supporting Hermes Gateway and standard OpenAI streaming events.
+            ## Hermes Android v1.2.0 (Minis Provider Suite)
+            - **Exact Minis Provider Design**: Monogram avatars, status pills, latency ping tester, and provider instance cards.
+            - **Unlimited Model Binding**: Add any custom model ID without restrictions, with context window overrides.
+            - **Full Minis Provider Presets**: OpenAI, Anthropic, OpenRouter, Local 9Router, Ollama, and Custom Endpoints.
+            - **Live Endpoint Model Discovery**: Auto-fetch all models directly from `/v1/models` in one tap.
+            - **Seamless Termux Auto-Link**: Probes local ports (8765, 20128, 11434, 9119) and links them on the fly.
+            - **Obsidian & Emerald Visual Theme**: Dark-first palette inspired by Open Minis.
