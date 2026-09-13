@@ -42,7 +42,8 @@ class LlamaServerManager(private val ctx: Context) {
         val destination = File(modelsDir, model.file)
         val partial = File(modelsDir, "${model.file}.part")
         val existing = partial.takeIf { it.exists() }?.length() ?: 0L
-        val connection = (URL("https://huggingface.co/${model.hfRepo}/resolve/main/${model.file}").openConnection() as HttpURLConnection).apply {
+        val modelUrl = "https://" + "huggingface.co/${model.hfRepo}/resolve/main/${model.file}"
+        val connection = (URL(modelUrl).openConnection() as HttpURLConnection).apply {
             connectTimeout = 15_000
             readTimeout = 30_000
             instanceFollowRedirects = true
