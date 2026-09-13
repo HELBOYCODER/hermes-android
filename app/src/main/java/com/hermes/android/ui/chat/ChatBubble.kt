@@ -28,7 +28,6 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import com.hermes.android.chat.ChatMsg
 import com.hermes.android.chat.ToolCall
-import com.hermes.android.chat.ToolCall
 
 @Composable
 fun ChatBubble(role: String, text: String, tools: List<ToolCall>, nested: List<ChatMsg>) {
