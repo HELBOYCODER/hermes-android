@@ -1,51 +1,50 @@
-# Hermes Android — native on-device Hermes Agent client
+# Hermes Android — native Hermes Agent client
 
-Independent mobile client built on the open-source [Hermes Agent](https://github.com/NousResearch/hermes-agent)
-(Nous Research) + [Hermes WebUI](https://github.com/przbadu/hermes-ui) concepts.
+A Compose-first Android client for the open-source [Hermes Agent](https://github.com/NousResearch/hermes-agent). It uses remote providers through Hermes (Nous Portal, OpenAI-compatible endpoints, OpenRouter, OpenAI, Anthropic, Google, and others) and deliberately does **not** ship or run a local llama.cpp model server.
+
 **No ads. No paywall. No review-gating. Everything unlocked.**
 
-> Internal placeholder v1 — Chat, Tools, Cron, Gateway, Memory, Skills, Terminal,
-> Dashboard, Local models, Soul, Settings + Setup wizard + Foreground Service are
-> scaffolded with real logic seams; proot bootstrap, PTY exec, and gateway pairing
-> complete in the full build.
+## Architecture
 
-```
-┌─────────────────────────────────────────────────────────┐
-│  UI (Jetpack Compose, Material 3, HermesTheme gold)     │
-│  Chat│Terminal│Tools│Cron│Gateway│Memory│Skills│Dash     │
-│  Models│Soul│Settings│SetupWizard│ApprovalDialog        │
-├─────────────────────────────────────────────────────────┤
-│  ChatViewModel ◄── HermesBridge ──► backend             │
-│  StreamParser (line-JSON/SSE → Token/ToolStart/Out/End) │
-├──────────────┬────────────────────┬─────────────────────┤
-│ PROOT        │ IPC                │ LOCAL LLM           │
-│ ProotInstaller│ ACP → gateway     │ LlamaServerManager  │
-│ Debian/Termux │ HTTP/WS 127.0.0.1 │ llama.cpp :8080     │
-│ .[termux] pin │ else PTY+parser   │ HF GGUF downloader  │
-├──────────────┴────────────────────┴─────────────────────┤
-│ HermesForegroundService (dataSync+WakeLock) │ BootRecv  │
-│ ~/.hermes → app-private │ SAF backup │ Keystore keys    │
-└─────────────────────────────────────────────────────────┘
+```text
+Compose UI (chat, terminal, tools, cron, gateway, memory, skills, dashboard)
+        │ streaming tokens + tool events
+        ▼
+HermesBridge ──► loopback Hermes gateway / ACP / PTY fallback
+        │
+        ▼
+ProotInstaller ──► app-private Debian/Termux-compatible userland
+        │              Python venv + Hermes Agent [termux]
+        ▼
+~/.hermes mapped to app-private storage
 ```
 
-**Modules** (`app/src/main/java/com/hermes/android/`):
-`backend/ProotInstaller` (pinned Hermes commit, constraints-termux.txt, live-log steps,
-auto-retry) · `ipc/HermesBridge` + `ipc/StreamParser` (+unit tests) ·
-`llm/LlamaServerManager` (library, RAM guard, benchmark, OpenAI-compat endpoint) ·
-`service/HermesForegroundService` + `BootReceiver` · `chat/ChatViewModel` ·
-`data/Catalog` (slash commands, toolsets + honest unsupported states) ·
-`ui/{theme,chat,tools,cron,gateway,memory,skills,terminal,dashboard,models,settings,setup,soul,more,security}`.
+The backend uses the upstream Hermes revision:
 
-**Backend (full build):** Termux/DEBIAN proot → pkg deps
-(python, clang, rust, make, libffi, openssl, nodejs, ripgrep, ffmpeg) → venv →
-`pip install -e '.[termux]' -c constraints-termux.txt` at pinned commit.
+- Version: `0.21.2`
+- Commit: `abf4706384c8ab17d6f22aab0ab8c71526eac305`
+- Install constraints: upstream `constraints-termux.txt`
 
-**Test plan:** `StreamParserTest` (5 tests: token/tool-lifecycle/SSE/plain/session-error) —
-`./gradlew :app:testDebugUnitTest`. On-device: setup wizard green → chat streams →
-interrupt → tool card → local model tok/s → cron pause/resume → gateway test → SAF backup.
+## Current build contract
 
-**Honest limitations (exact in-app copy):**
-- Voice: *"Voice capture (faster-whisper extra) is not available in the Android bundle… Type or use system dictation; TTS replies still work."*
-- Browser: *"Playwright auto-bootstrap is not available on Android… web_search + web_extract cover most browsing."*
-- Docker: *"Docker backend needs a container runtime — not present on stock Android. The proot userland + code_execution tools run your code on-device instead."*
-- Background: *"Android suspends background work. Hermes runs as a Foreground Service with a WakeLock; exempt the app from battery optimization or long cron jobs may pause."*
+The Setup Wizard requires the Android packaging pipeline to include a native `hermes-provision` executable. That executable is responsible for provisioning proot/rootfs, installing the pinned Hermes revision with the `.[termux]` bundle, and writing `~/.hermes/VERSION` after `hermes --version` succeeds.
+
+The Android app intentionally refuses to claim setup is complete when this provisioner is absent. This prevents a non-functional installation from being presented as ready.
+
+## CI
+
+Every push to `main` runs:
+
+```bash
+gradle :app:testDebugUnitTest --stacktrace
+gradle :app:assembleDebug --stacktrace
+```
+
+The workflow uploads `app/build/outputs/apk/debug/*.apk` as the `hermes-debug` artifact when the build succeeds.
+
+## Honest Android limitations
+
+- **Voice input:** faster-whisper is not part of the Android/Termux bundle. Use system dictation; Hermes TTS remains available.
+- **Browser automation:** Playwright auto-bootstrap is unavailable on Android. `web_search` and `web_extract` remain available.
+- **Docker:** stock Android has no container runtime. Hermes uses the proot userland for terminal and code-execution workflows.
+- **Background work:** Android can suspend work. Hermes uses a Foreground Service and WakeLock; battery-optimization exemption is recommended for long cron jobs.
