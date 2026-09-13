@@ -5,10 +5,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Button
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
@@ -18,69 +15,74 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import com.hermes.android.backend.ProotInstaller
-import com.hermes.android.service.HermesForegroundService
 import kotlinx.coroutines.launch
 
 /**
- * One-tap Setup Wizard: live log stream, per-step progress, auto-retry,
- * integrity checks, plain-language error recovery.
+ * Uses Hermes' documented Termux path. It never pretends to install Hermes in
+ * this app's sandbox; users run the official command in the Termux terminal.
  */
 @Composable
 fun SetupWizardScreen(onDone: () -> Unit) {
-    val ctx = LocalContext.current
-    val installer = remember { ProotInstaller(ctx) }
+    val context = LocalContext.current
+    val installer = remember { ProotInstaller(context) }
     val state by installer.state.collectAsState()
     val scope = rememberCoroutineScope()
+    val clipboard = LocalClipboardManager.current
 
-    Column(Modifier.fillMaxSize().padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+    Column(
+        Modifier.fillMaxSize().padding(20.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
         Text("Hermes Android", style = MaterialTheme.typography.headlineMedium)
         Text(
-            "One-tap setup installs the real Hermes Agent on your device. " +
-                "No ads, no paywall — everything unlocked.",
-            style = MaterialTheme.typography.bodyMedium
+            "Hermes runs through the supported Termux installation on this phone. " +
+                "This client connects to that installation and uses cloud model providers.",
+            style = MaterialTheme.typography.bodyMedium,
         )
-        when (val s = state) {
-            is ProotInstaller.State.Idle -> {
-                Text("5 steps: userland → packages → Hermes (pinned) → venv → verify.")
-                Button(onClick = { scope.launch { installer.install() } }, Modifier.fillMaxWidth()) {
-                    Text("Install Hermes on this device")
-                }
-            }
-            is ProotInstaller.State.Running -> {
-                Text("${s.index + 1}/${s.total} — ${s.step.label}")
-                LinearProgressIndicator(progress = { (s.index).toFloat() / s.total }, Modifier.fillMaxWidth())
-                LogBox(s.log)
-            }
-            is ProotInstaller.State.Done -> {
-                Text("✓ Hermes ${s.hermesVersion} ready.")
-                Button(onClick = {
-                    ctx.getSharedPreferences("hermes", android.content.Context.MODE_PRIVATE)
-                        .edit().putBoolean("setup_done", true).apply()
-                    HermesForegroundService.start(ctx)
-                    onDone()
-                }, Modifier.fillMaxWidth()) { Text("Start chatting") }
-            }
-            is ProotInstaller.State.Failed -> {
-                Text("✗ Stopped at: ${s.step.label}\n${s.error}", color = MaterialTheme.colorScheme.error)
-                Text("What to try: check storage (500MB free) and network, then retry. Nothing is half-installed — retry is safe.")
-                LogBox(s.log)
-                Button(onClick = { scope.launch { installer.retry() } }, Modifier.fillMaxWidth()) {
-                    Text("Retry (safe)")
-                }
-                OutlinedButton(onClick = onDone, Modifier.fillMaxWidth()) { Text("Skip for now") }
-            }
-        }
-    }
-}
 
-@Composable
-private fun LogBox(log: List<String>) {
-    LazyColumn(Modifier.fillMaxWidth().weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-        items(log, key = { it.hashCode().toString() + it.length }) {
-            Text(it, style = MaterialTheme.typography.bodySmall, fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace)
+        when (val current = state) {
+            ProotInstaller.State.Idle -> Button(
+                onClick = { scope.launch { installer.install() } },
+                modifier = Modifier.fillMaxWidth(),
+            ) { Text("Set up Hermes with Termux") }
+
+            ProotInstaller.State.Checking -> Text("Checking for Termux…")
+
+            is ProotInstaller.State.TermuxMissing -> {
+                Text(current.message, color = MaterialTheme.colorScheme.error)
+                Text(
+                    "Install the official Termux app, open it once, then return and tap Retry.",
+                    style = MaterialTheme.typography.bodySmall,
+                )
+                Button(
+                    onClick = { scope.launch { installer.install() } },
+                    modifier = Modifier.fillMaxWidth(),
+                ) { Text("Retry") }
+                OutlinedButton(onClick = onDone, modifier = Modifier.fillMaxWidth()) { Text("Configure later") }
+            }
+
+            is ProotInstaller.State.Ready -> {
+                Text("1. Copy the official Hermes command.")
+                Text(current.command, fontFamily = FontFamily.Monospace, style = MaterialTheme.typography.bodySmall)
+                Button(
+                    onClick = { clipboard.setText(AnnotatedString(current.command)) },
+                    modifier = Modifier.fillMaxWidth(),
+                ) { Text("Copy install command") }
+                Text("2. Open Termux, paste it, and wait for installation to finish.")
+                Button(onClick = { installer.openTermux() }, modifier = Modifier.fillMaxWidth()) {
+                    Text("Open Termux")
+                }
+                Text("3. In Termux, verify with: hermes --version && hermes doctor", style = MaterialTheme.typography.bodySmall)
+                OutlinedButton(onClick = onDone, modifier = Modifier.fillMaxWidth()) {
+                    Text("Continue to Hermes client")
+                }
+            }
         }
     }
 }
