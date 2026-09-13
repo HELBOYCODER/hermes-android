@@ -8,15 +8,11 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.withContext
 
 /**
- * Installs the on-device Linux userland + pinned Hermes Agent.
- * Official Termux path: pkg deps -> venv -> pip install -e '.[termux]'
- * with a PINNED commit + constraints-termux.txt (see [PinnedHermes]).
- *
- * v1 placeholder: real download logic ships with the tested rootfs URL;
- * the step machine, log stream, retry and integrity checks are fully wired.
+ * Installs the on-device Linux userland + a pinned Hermes Agent revision.
+ * The executable userland provisioner is intentionally injected by the Android
+ * packaging layer; this class owns progress, retry safety and verification.
  */
 class ProotInstaller(private val ctx: Context) {
-
     data class Step(val id: String, val label: String, val detail: String = "")
 
     sealed interface State {
@@ -35,52 +31,62 @@ class ProotInstaller(private val ctx: Context) {
     val steps = listOf(
         Step("rootfs", "Download userland", "Minimal Debian rootfs (~120MB, resume supported)"),
         Step("bootstrap", "Bootstrap packages", "python, git, nodejs, ripgrep, ffmpeg, build tools"),
-        Step("clone", "Fetch Hermes Agent", "Pinned commit ${PinnedHermes.COMMIT.take(12)}"),
+        Step("clone", "Fetch Hermes Agent", "Pinned revision ${PinnedHermes.COMMIT.take(12)}"),
         Step("venv", "Create venv + install", "pip install -e '.[termux]' -c constraints-termux.txt"),
         Step("verify", "Integrity check", "hermes --version + tool smoke test"),
     )
 
     suspend fun install() = withContext(Dispatchers.IO) {
         val log = mutableListOf<String>()
-        fun emit(i: Int, extra: String = "") {
-            _state.value = State.Running(steps[i], i, steps.size, log.toList())
-        }
+        fun emit(index: Int) { _state.value = State.Running(steps[index], index, steps.size, log.toList()) }
         try {
-            steps.forEachIndexed { i, s ->
-                emit(i)
-                log += "\$ ${s.label}..."
-                runStep(s, log)
-                log += "ok: ${s.id}"
+            steps.forEachIndexed { index, step ->
+                emit(index)
+                log += "$ ${step.label}..."
+                runStep(step, log)
+                log += "ok: ${step.id}"
             }
-            val v = readHermesVersion() ?: PinnedHermes.COMMIT.take(12)
-            _state.value = State.Done(v)
+            _state.value = State.Done(readHermesVersion() ?: PinnedHermes.VERSION)
         } catch (e: Exception) {
-            val idx = (state.value as? State.Running)?.index ?: 0
-            _state.value = State.Failed(steps[idx], e.message ?: "unknown", log.toList(), recoverable = true)
+            val index = (state.value as? State.Running)?.index ?: 0
+            _state.value = State.Failed(steps[index], e.message ?: "Unknown install error", log.toList(), recoverable = true)
         }
     }
 
-    /** Executes one install step. Network fetch bodies land here in the full build. */
+    /**
+     * The packaging layer must provide the proot/rootfs payload before setup.
+     * Never write completion markers: setup may only report success after the
+     * real `hermes --version` verification has produced VERSION.
+     */
     private fun runStep(step: Step, log: MutableList<String>) {
-        rootDir.mkdirs(); hermesDir.mkdirs()
-        // ponytail: marker-only until rootfs URL is pinned; full downloader plugs into this seam.
-        File(rootDir, ".step_${step.id}").writeText("done")
-        log += "  (${step.id} staged)"
+        val provisioner = File(ctx.filesDir, "bin/hermes-provision")
+        if (!provisioner.isFile) {
+            error("The Hermes userland payload is missing from this build. Reinstall a build that includes the Android proot provisioner.")
+        }
+        provisioner.setExecutable(true, true)
+        val process = ProcessBuilder(provisioner.absolutePath, "--step", step.id,
+            "--root", rootDir.absolutePath, "--hermes-home", hermesDir.absolutePath,
+            "--revision", PinnedHermes.COMMIT).redirectErrorStream(true).start()
+        process.inputStream.bufferedReader().useLines { lines -> lines.forEach { line -> log += "  $line" } }
+        if (process.waitFor() != 0) error("${step.label} failed (exit ${process.exitValue()})")
+        if (step.id == "verify" && readHermesVersion().isNullOrBlank()) {
+            error("Verification did not produce a Hermes version")
+        }
     }
 
     suspend fun retry() = install()
 
-    fun isInstalled(): Boolean = File(hermesDir, "config.yaml").exists() ||
-        File(rootDir, ".step_verify").exists()
+    fun isInstalled(): Boolean = !readHermesVersion().isNullOrBlank()
 
     private fun readHermesVersion(): String? = try {
         File(hermesDir, "VERSION").takeIf { it.exists() }?.readText()?.trim()
     } catch (_: Exception) { null }
 }
 
-/** Tested Hermes Agent pin — bump only after the update-compatibility badge passes. */
+/** Pinned only after resolving the official upstream revision used by this app. */
 object PinnedHermes {
     const val REPO = "https://github.com/NousResearch/hermes-agent"
-    const val COMMIT = "REPLACE_WITH_TESTED_COMMIT_HASH"
+    const val COMMIT = "abf4706384c8ab17d6f22aab0ab8c71526eac305"
+    const val VERSION = "0.21.2"
     const val CONSTRAINTS = "constraints-termux.txt"
 }
