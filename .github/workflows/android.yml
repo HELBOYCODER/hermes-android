@@ -23,14 +23,12 @@ jobs:
         if: github.ref == 'refs/heads/main'
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v1.2.0
-          name: "Hermes Android v1.2.0 — Minis Provider Suite"
+          tag_name: v1.3.0
+          name: "Hermes Android v1.3.0 — Full Minis UI Clone"
           files: app/build/outputs/apk/debug/app-debug.apk
           body: |
-            ## Hermes Android v1.2.0 (Minis Provider Suite)
-            - **Exact Minis Provider Design**: Monogram avatars, status pills, latency ping tester, and provider instance cards.
-            - **Unlimited Model Binding**: Add any custom model ID without restrictions, with context window overrides.
-            - **Full Minis Provider Presets**: OpenAI, Anthropic, OpenRouter, Local 9Router, Ollama, and Custom Endpoints.
-            - **Live Endpoint Model Discovery**: Auto-fetch all models directly from `/v1/models` in one tap.
-            - **Seamless Termux Auto-Link**: Probes local ports (8765, 20128, 11434, 9119) and links them on the fly.
-            - **Obsidian & Emerald Visual Theme**: Dark-first palette inspired by Open Minis.
+            ## Hermes Android v1.3.0 (Full Minis UI Clone)
+            - **Full Minis shell**: Chat, Models, Terminal, Stats and More navigation with compact dark surfaces.
+            - **Minis visual language across every screen**: providers, chat, tools, cron, gateway, memory, skills, terminal, dashboard, settings and setup.
+            - **Obsidian + Emerald/Cyan theme** with active pills, status badges, compact cards, empty states and mobile-safe spacing.
+            - **No feature changes**: this release is a UI-only clone layer on Hermes capabilities.
